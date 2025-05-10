@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Amina Casino</title>
+  <style>
+    body { background-color: #111; color: #fff; font-family: Arial; text-align: center; }
+    .slot { font-size: 5em; margin: 20px; }
+    .button { padding: 15px 30px; font-size: 1.5em; background: gold; color: #111; border: none; cursor: pointer; }
+    #wallet-address { margin-top: 20px; font-size: 1em; color: lightgreen; }
+  </style>
+</head>
+<body>
+  <h1>Amina Casino</h1>
+  <button onclick="connectWallet()" class="button">Connect Pera Wallet</button>
+  <div id="wallet-address">Not connected</div>
+
+  <div class="slot" id="slot">🍒 🍋 🍇</div>
+  <button onclick="spin()" class="button">SPIN</button>
+  <div id="result"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/client@1.6.6/dist/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/algosdk@1.17.1/dist/algosdk.min.js"></script>
+
+  <script>
+    const AminaASAID = 1107424865;
+    const algodClient = new algosdk.Algodv2('', 'https://node.algoexplorerapi.io', '');
+
+    let userAddress = null;
+
+    async function connectWallet() {
+      if (window.WalletConnect) {
+        const connector = new WalletConnect.default({
+          bridge: "https://bridge.walletconnect.org",
+        });
+
+        if (!connector.connected) {
+          await connector.createSession();
+        }
+
+        connector.on("connect", (error, payload) => {
+          if (error) throw error;
+          const { accounts } = payload.params[0];
+          userAddress = accounts[0];
+          document.getElementById("wallet-address").innerText = `Connected: ${userAddress}`;
+        });
+
+        connector.on("disconnect", () => {
+          userAddress = null;
+          document.getElementById("wallet-address").innerText = "Not connected";
+        });
+
+        // Open QR code modal for Pera Wallet
+        const uri = connector.uri;
+        window.open(`https://perawallet.app/wc?uri=${encodeURIComponent(uri)}`, '_blank');
+      } else {
+        alert("WalletConnect not supported.");
+      }
+    }
+
+    function spin() {
+      if (!userAddress) {
+        alert("Please connect your wallet first.");
+        return;
+      }
+
+      const symbols = ['🍒', '🍋', '🍇', '⭐', '💎'];
+      const spinResult = [0, 0, 0].map(() => symbols[Math.floor(Math.random() * symbols.length)]);
+      document.getElementById("slot").innerText = spinResult.join(' ');
+      
+      const isWin = spinResult.every(s => s === spinResult[0]);
+      const prize = isWin ? 0.005 : 0;
+      const resultMsg = isWin ? `You won ${prize} Amina!` : "You lost. Try again!";
+      document.getElementById("result").innerText = resultMsg;
+
+      // Here, you would add logic to send the Amina Coin using algosdk
+    }
+  </script>
+</body>
+</html>
